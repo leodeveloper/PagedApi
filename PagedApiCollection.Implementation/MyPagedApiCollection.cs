@@ -5,8 +5,6 @@ using PagedApi;
 
 namespace PagedApiCollection.Implementation
 {
-
-
     public class MyPagedApiCollection : IPagedApiCollection
     {
         private readonly IPagedApi _pagedApi;
@@ -19,8 +17,11 @@ namespace PagedApiCollection.Implementation
         public IEnumerableDisposable<TItem> GetItems<TItem>()
         {
             IEnumerable<TItem> items = getPageItems<TItem>();
-            IEnumerableDisposable<TItem> pageItems = new EnumerableDisposable<TItem>(items);
-            return pageItems;
+            using (IEnumerableDisposable<TItem> pageItems = new EnumerableDisposable<TItem>(items))
+            {
+                return pageItems;
+            }
+                
         }
 
         #region Private Methods
@@ -30,24 +31,30 @@ namespace PagedApiCollection.Implementation
         /// * Once the consumer is finished with the request, ensure `IPagedApi.EndPagesRequest()` is called.
         /// * You discover a quirk concerning `IPagedApi.GetNextPage()`, where sometimes the returned `Page.Items` collection can be empty. Ensure this is gracefully handled within your implementation.
         /// </summary>
-        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TItem">IEnumerable of item oftype TItem</typeparam>
         /// <returns></returns>
         private IEnumerable<TItem> getPageItems<TItem>()
         {
-            IEnumerable<TItem> items = Enumerable.Empty<TItem>();
-            ItemTypeId value = (ItemTypeId)Enum.Parse(typeof(ItemTypeId), typeof(TItem).Name);
-            _pagedApi.BeginPagesRequest(value);
-            Page page = _pagedApi.GetNextPage(1);
-            _pagedApi.EndPagesRequest(page.RequestId);
-
-            if (page?.Items.Count() > 0)
+            List<TItem> items = new List<TItem>();
+            ItemTypeId itemType;
+            if (Enum.TryParse<ItemTypeId>(typeof(TItem).Name, out itemType))
             {
-                items = page.Items.Cast<TItem>();
-            }
+                int requestId = _pagedApi.BeginPagesRequest(itemType);
+                Page page = new Page();
+                do
+                {
+                    page = _pagedApi.GetNextPage(requestId);
+                    items.AddRange(page.Items.Cast<TItem>());                   
 
+                } while (page.HasNextPage); 
+                _pagedApi.EndPagesRequest(page.RequestId);               
+            }
+            else
+            {
+                //need to implement logging here if the ItemTypeId is not valid or throw an exception
+            }
             return items;
         }
-
         #endregion
     }
 }

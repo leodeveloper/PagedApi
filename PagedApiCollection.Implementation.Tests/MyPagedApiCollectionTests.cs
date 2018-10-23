@@ -20,7 +20,7 @@ namespace PagedApiCollection.Implementation.Tests
 		public void GetItems_ToArray_ReturnsAllItems()
 		{
 			// Arrange
-			var expectedItems = Enumerable.Range(0, 5).Select(i => new Foo {Id = i}).ToArray();
+			var expectedItems = Enumerable.Range(0, 400000).Select(i => new Foo {Id = i}).ToArray();
 
 			_fakePagedApi[ItemTypeId.Foo].AddRange(expectedItems);
 

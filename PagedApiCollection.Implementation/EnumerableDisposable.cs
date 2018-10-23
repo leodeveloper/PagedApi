@@ -10,29 +10,36 @@ namespace PagedApiCollection.Implementation
 {
     public class EnumerableDisposable<TItem> : IEnumerableDisposable<TItem>
     {
-
         private IEnumerable<TItem> value;
 
+        public EnumerableDisposable(IEnumerable<TItem> items) => this.value = items;
 
-        public EnumerableDisposable(IEnumerable<TItem> items)
+        IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+
+        IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator() => this.value.GetEnumerator();
+
+        #region dispose
+        bool disposed;
+
+        protected virtual void Dispose(bool disposing)
         {
-            this.value = items;
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    //dispose managed resources
+                }
+            }
+            //dispose unmanaged resources
+            disposed = true;
         }
 
         public void Dispose()
         {
-            this.value = null;
-        }       
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            throw new NotImplementedException();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
-
-        IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator()
-        {
-            return this.value.GetEnumerator();
-        }
+        #endregion
     }
 
    
